@@ -1,0 +1,362 @@
+﻿var MuvizuRegHdr = new function() 
+{
+	this.Initialise = function(txtUsername, txtEmail, txtPassword, chkTerms, 
+								infoUser, infoEmail, infoPass, infoTerms,
+								holderUser, holderEmail, holderPass, holderTerms) 
+	{
+		// Store
+		this.txtUsername	= txtUsername;
+		this.txtEmail		= txtEmail;
+		this.txtPassword	= txtPassword;
+		this.chkTerms		= chkTerms;
+
+		this.holderUser		= holderUser;
+		this.holderEmail	= holderEmail;
+		this.holderPass		= holderPass;
+		this.holderTerms	= holderTerms;
+
+		this.infoUser		= infoUser;
+		this.infoEmail		= infoEmail;
+		this.infoPass		= infoPass;
+		this.infoTerms		= infoTerms;
+
+		// Validate when focus lost
+		$(this.txtUsername).blur(function() 
+		{
+			DoValidation(this,  $(MuvizuRegHdr.holderUser), 'ValidateUsername', $(MuvizuRegHdr.infoUser));
+		});
+
+		$(this.txtEmail).blur(function() 
+		{
+			DoValidation(this,  $(MuvizuRegHdr.holderEmail), 'ValidateEmail', $(MuvizuRegHdr.infoEmail));
+		});
+
+		$(this.txtPassword).blur(function() 
+		{
+			DoValidation(this,  $(MuvizuRegHdr.holderPass), 'ValidatePassword', $(MuvizuRegHdr.infoPass));
+		});
+
+		$('.join-select').on('change', function() 
+			{
+				if ( parseInt(this.value) > -1 )
+				{
+					$(this).addClass('valid');
+				}
+			});
+	};
+		
+	this.UpdateResult = function(jsonData, txtCtrl, valCtrl, infoCtrl)
+	{
+		if (jsonData.success == "1")
+		{
+			// Success
+			$(valCtrl).addClass('correct-input');
+			$(valCtrl).removeClass('error-input');
+			$(infoCtrl).text('');
+		}
+		else
+		{
+			// Fail
+			$(valCtrl).addClass('error-input');
+			$(valCtrl).removeClass('correct-input');
+			$(infoCtrl).text(jsonData.errorMsg);
+		}
+	};
+		
+	this.ValidateAll = function()
+	{
+		DoValidation($(this.txtUsername),	$(this.holderUser), 'ValidateUsername', $(MuvizuRegHdr.infoUser));
+		DoValidation($(this.txtEmail),		$(this.holderEmail), 'ValidateEmail', $(MuvizuRegHdr.infoEmail));
+		DoValidation($(this.txtPassword),	$(this.holderPass), 'ValidatePassword', $(MuvizuRegHdr.infoPass));
+
+		ValidateTerms();
+			
+		// Show submit
+		var allGood = (	$(this.holderUser).hasClass('correct-input') &&
+						$(this.holderEmail).hasClass('correct-input') &&
+						$(this.holderPass).hasClass('correct-input') &&
+						$(this.holderTerms).hasClass('correct-input'));
+
+		if (!allGood)
+		{
+			// Some fixes required
+			return false;
+		}
+			
+		return true;
+	};
+
+	this.WikiLogin = function() 
+	{
+		$.ajax( {	url:		'/WebMethods/Utility.ashx?wikiLogin=1',
+					type:		'POST',
+					dataType:	'json',
+					async:		true
+				} );
+	};
+
+	///.........Private...
+	var ValidateTerms = function()
+	{
+		if ( $(MuvizuRegHdr.chkTerms).is(':checked') )
+		{
+			$(MuvizuRegHdr.holderTerms).addClass('correct-input');
+			$(MuvizuRegHdr.holderTerms).removeClass('error-input');
+			$(MuvizuRegHdr.infoTerms).text("");
+		}
+		else
+		{
+			$(MuvizuRegHdr.holderTerms).addClass('error-input');
+			$(MuvizuRegHdr.holderTerms).removeClass('correct-input');
+			$(MuvizuRegHdr.infoTerms).text("You must agree to the terms and conditions");
+		}
+	};
+
+	var DoValidation = function(txtCtrl, resultCtrl, opName, infoCtrl) 
+	{
+		var data		= $.trim( $(txtCtrl).val() );
+		var url			= '/WebMethods/RegUtils.ashx?op=' + opName + '&data=' + encodeURI(data);
+
+		$.ajax( {	url:		url,
+					type:		'GET',
+					dataType:	'json',
+					async:		false,
+					success:	function(jsonData) 
+								{
+									MuvizuRegHdr.UpdateResult(jsonData, txtCtrl, resultCtrl, infoCtrl);
+								}
+				} );
+	};
+	/*
+	var txtUsername, txtEmail, txtPassword, chkTerms, paraInfo, 
+		holderUser, holderEmail, holderPass, holderTerms,
+		infoUser, infoEmail, infoPass, infoTerms;*/
+};
+
+var MuvizuReg = new function() 
+{
+	this.Initialise = function(txtUsername, txtEmail, txtPassword, chkTerms, 
+								infoUser, infoEmail, infoPass, infoTerms,
+								holderUser, holderEmail, holderPass, holderTerms) 
+	{
+		// Store
+		this.txtUsername	= txtUsername;
+		this.txtEmail		= txtEmail;
+		this.txtPassword	= txtPassword;
+		this.chkTerms		= chkTerms;
+
+		this.holderUser		= holderUser;
+		this.holderEmail	= holderEmail;
+		this.holderPass		= holderPass;
+		this.holderTerms	= holderTerms;
+
+		this.infoUser		= infoUser;
+		this.infoEmail		= infoEmail;
+		this.infoPass		= infoPass;
+		this.infoTerms		= infoTerms;
+
+		// Validate when focus lost
+		$(this.txtUsername).blur(function() 
+		{
+			DoValidation(this,  $(MuvizuReg.holderUser), 'ValidateUsername', $(MuvizuReg.infoUser));
+		});
+
+		$(this.txtEmail).blur(function() 
+		{
+			DoValidation(this,  $(MuvizuReg.holderEmail), 'ValidateEmail', $(MuvizuReg.infoEmail));
+		});
+
+		$(this.txtPassword).blur(function() 
+		{
+			DoValidation(this,  $(MuvizuReg.holderPass), 'ValidatePassword', $(MuvizuReg.infoPass));
+		});
+	};
+		
+	this.UpdateResult = function(jsonData, txtCtrl, valCtrl, infoCtrl)
+	{
+		if (jsonData.success == "1")
+		{
+			// Success
+			$(valCtrl).addClass('correct-input');
+			$(valCtrl).removeClass('error-input');
+			$(infoCtrl).text('');
+		}
+		else
+		{
+			// Fail
+			$(valCtrl).addClass('error-input');
+			$(valCtrl).removeClass('correct-input');
+			$(infoCtrl).text(jsonData.errorMsg);
+		}
+	};
+		
+	this.ValidateAll = function()
+	{
+		DoValidation($(this.txtUsername),	$(this.holderUser), 'ValidateUsername', $(MuvizuReg.infoUser));
+		DoValidation($(this.txtEmail),		$(this.holderEmail), 'ValidateEmail', $(MuvizuReg.infoEmail));
+		DoValidation($(this.txtPassword),	$(this.holderPass), 'ValidatePassword', $(MuvizuReg.infoPass));
+
+		ValidateTerms();
+			
+		// Show submit
+		var allGood = (	$(this.holderUser).hasClass('correct-input') &&
+						$(this.holderEmail).hasClass('correct-input') &&
+						$(this.holderPass).hasClass('correct-input') &&
+						$(this.holderTerms).hasClass('correct-input'));
+
+		if (!allGood)
+		{
+			// Some fixes required
+			return false;
+		}
+			
+		return true;
+	};
+
+	///.........Private...
+	var ValidateTerms = function()
+	{
+		if ( $(MuvizuReg.chkTerms).is(':checked') )
+		{
+			$(MuvizuReg.holderTerms).addClass('correct-input');
+			$(MuvizuReg.holderTerms).removeClass('error-input');
+			$(MuvizuReg.infoTerms).text("");
+		}
+		else
+		{
+			$(MuvizuReg.holderTerms).addClass('error-input');
+			$(MuvizuReg.holderTerms).removeClass('correct-input');
+			$(MuvizuReg.infoTerms).text("You must agree to the terms and conditions");
+		}
+	};
+
+	var DoValidation = function(txtCtrl, resultCtrl, opName, infoCtrl) 
+	{
+		var data		= $.trim( $(txtCtrl).val() );
+		var url			= '/WebMethods/RegUtils.ashx?op=' + opName + '&data=' + encodeURI(data);
+
+		$.ajax( {	url:		url,
+					type:		'GET',
+					dataType:	'json',
+					async:		false,
+					success:	function(jsonData) 
+								{
+									MuvizuReg.UpdateResult(jsonData, txtCtrl, resultCtrl, infoCtrl);
+								}
+				} );
+	};
+};
+
+
+// FACEBOOK
+function statusChangeCallback(response) 
+{
+	// console.log('statusChangeCallback');
+	// console.log(response);
+    
+	// Full docs on the response object can be found in the documentation for FB.getLoginStatus().
+	if (response.status === 'connected') 
+	{
+		// Logged into your app and Facebook.
+		MuvizuLogin(response);
+	} 
+	else if (response.status === 'not_authorized') 
+	{
+		// The person is logged into Facebook, but not your app.
+		// alert('Please log into this site.');
+	} 
+	else
+	{
+		// The person is not logged into Facebook, so we're not sure if they are logged into this app or not.
+		// alert('Please log into Facebook.');
+	}
+}
+
+function checkLoginState()
+{
+	$('.fb-progress').show();
+
+	FB.getLoginStatus(function(response) 
+		{
+			statusChangeCallback(response);
+		});
+}
+
+function MuvizuLogin(loginResponse)
+{
+	// console.log(loginResponse);
+	// console.log(JSON.stringify(loginResponse));
+	
+	FB.api(	'/me', 
+			function(response) 
+			{
+				if (!response || response.error)
+				{
+					ShowFailedMsg();
+					return;
+				}
+				//console.log(JSON.stringify(response));
+				// console.log(response);
+				// console.log('Successful login.');
+				// console.log('FB name: ' + response.name);
+				// console.log('FB email: ' + response.email);
+				// console.log('FB locale: ' + response.locale);
+				// console.log('FB ID: ' + response.id);
+				// console.log('Auth response id: ' + loginResponse.authResponse.userID);
+					
+				var jsonData = {	
+									id: response.id,
+									userID: loginResponse.authResponse.userID,
+									accessToken: loginResponse.authResponse.accessToken, 
+									email: response.email,
+									first_name: response.first_name,
+									last_name: response.last_name,
+									name: response.name,
+									gender: response.gender,
+									locale: response.locale,
+									link: response.link,
+									timezone: response.timezone
+								};
+					
+				$.ajax(
+					{
+						method: 'POST',
+						url: '/webmethods/facebook.ashx',
+						data: jsonData
+					})
+					.done(function( jsonReturned ) 
+						{
+							// console.log('Muvizu login result: ' + jsonReturned.result);
+								
+							if ('SuccessfullyLoggedIn' == jsonReturned.result)
+							{
+								// Refresh page
+								window.location.replace( window.location.href.substr(0, window.location.href.indexOf('#')) );
+								return;
+							}
+							else if ('SuccessfullyRegistered' == jsonReturned.result)
+							{
+								window.location.replace('/register/changeUsername.aspx');
+							}
+							else if ('EmailAlreadyExists' == jsonReturned.result)
+							{
+								window.location.replace('/register/activate.aspx?fb=1');
+							}
+							else
+							{
+								// Failed
+								ShowFailedMsg();
+							}
+						})
+					.fail(function(jqXHR, textStatus) 
+						{
+							ShowFailedMsg();
+						});
+			});
+}
+
+function	ShowFailedMsg()
+{
+	$('.fb-fail').show();
+	$('.fb-progress').hide();
+}

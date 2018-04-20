@@ -1,0 +1,404 @@
+﻿$(document).ready( function() 
+{ 
+	DigiUtils.LimitMaxLengthAll();
+	// DigiLocalisation.SetupLocalisation(); 
+	MonitorTwitWidget();
+});
+
+
+//------------------DigiUtils-------------------------------------------------------------
+var DigiUtils = new function() 
+{
+	this.LimitMaxLengthAll = function(maxCharCount)
+	{
+		$('textarea[data-counter-id]').map(function() 
+		{
+			var maxLength = parseInt( $(this).attr('maxlength') );
+			DigiUtils.MakeMaxLength(this, $('#' + $(this).attr("data-counter-id")), maxLength);
+		});
+	};
+
+	this.MakeMaxLength = function(textArea, displayElement, maxLength) 
+	{
+		DigiUtils.UpdateMaxLength(textArea, displayElement, maxLength);
+
+		$(textArea).bind('keyup keydown', function() 
+			{
+				DigiUtils.UpdateMaxLength(this, displayElement, maxLength);
+			});
+	};
+
+	this.HtmlDecode = function(s)
+	{
+		return s.replace(/&quot;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
+	};
+
+	this.UpdateMaxLength = function(textArea, displayElement, maxLength) 
+	{
+		var characters = $(textArea).val().length;
+    
+		if (characters > (maxLength - 1)) 
+		{
+			$(displayElement).addClass('over');
+		} else 
+		{
+			$(displayElement).removeClass('over');
+		}
+
+		var outPut = (maxLength - characters).toString() + ' characters left';    
+		$(displayElement).text(outPut);
+	};
+
+	this.IsVisibleOnScreen	= function(elem)
+	{
+		var $t	= $(elem),
+			$w	= $(window),
+			viewTop	= $w.scrollTop(),
+			viewBottom	= viewTop + $w.height(),
+			_top	= $t.offset().top,
+			_bottom	= _top + $t.height(),
+			compareTop	= _bottom,
+			compareBottom	= _top;
+
+		return ((compareBottom <= viewBottom) && (compareTop >= viewTop));
+	};	
+
+	this.MuvizuCookieAccept = function()
+	{
+		$.ajax("/WebMethods/Utility.ashx?cookieAccept=true");
+		$("#cookie").fadeOut("fast");
+	};
+
+	this.ShowAlert = function()
+	{
+		$.ajax( {	url:		"/WebMethods/Utility.ashx?shouldshowalert=1",
+					type:		'POST',
+					async:		true,
+					success:	function(shouldShow) 
+								{
+									if ("1" == shouldShow)
+									{
+										$(".alert-overlay").show();
+										$('.alert-overlay').animate({ top: 10}, 1000, 'easeOutBounce');
+									}
+									else
+									{
+										$(".alert-overlay").hide();
+									}									
+								}
+				} );
+	};
+
+	this.DismissAlert = function()
+	{
+		$.ajax( {	url:		'/WebMethods/Utility.ashx?dismissalert=1',
+					type:		'POST',
+					async:		false
+				} );
+
+		$(".alert-overlay").fadeOut(300);
+	};
+
+	this.KeepSessionAlive = function() 
+	{
+		var rndCache = Math.floor(Math.random() * 50000);
+
+		$.ajax( {	url:		'/WebMethods/Utility.ashx?KeepAlive=1&ref=' + rndCache,
+					type:		'GET',
+					async:		true
+				} );
+	};
+
+	this.AlphaNumericSpaceOrComma = function (e) 
+	{
+		var kc = GetKeycode(e);
+
+		if (!( ((kc >= 65) && (kc <= 90)) || // a-z (ignoring caps)
+			   ((kc >= 48) && (kc <= 57) && !e.shiftKey) || // 0-9
+			   ((kc >= 96) && (kc <= 105)) || // 0-9 (numeric keypad)
+				(kc == 32) || // space
+				(kc == 9)  || // tab
+				(kc == 8)  || // backspace
+				(kc == 46) || // del
+				(kc == 39) || // cursor->
+				(kc == 37) || // cursor<-
+				(kc == 36) || // home
+				(kc == 35) || // end
+				((kc == 188) && !e.shiftKey)// comma
+			)) 
+		{
+			return false;
+		}
+		return true;
+	};
+	
+	this.TabToOnEnter	= function(e, id)
+	{
+		var event = e || window.event;
+
+		if (GetKeycode(event) == "13")
+		{
+			if (event.stopPropagation)
+				event.stopPropagation();
+		
+			if (event.preventDefault)
+				event.preventDefault();
+		
+			if (event.cancelBubble)
+				event.cancelBubble = true;
+		
+			id.focus(); 
+			return false; 
+		}
+		else
+			return true;
+	};
+	
+	this.ClickOnEnter	= function(e, id)
+	{
+		var event = e || window.event;
+
+		if (GetKeycode(event) == "13")
+		{
+			if (event.stopPropagation)
+				event.stopPropagation();
+		
+			if (event.preventDefault)
+				event.preventDefault();
+		
+			if (event.cancelBubble)
+				event.cancelBubble = true;
+			
+			id.click(); 
+			return false; 
+		}
+		else
+			return true;
+	};
+
+	// Click a given button when the user hits enter inside
+	// a textbox or whatever
+	this.ClickButtonOnEnter = function(e, buttonId)
+	{
+		if (GetKeycode(e) == 13)
+		{
+			var button = document.getElementById(buttonId);
+			window.status = buttonId;
+			if (button)
+			{
+				//button.click();
+				var btnString = ('#' + buttonId);
+				eval($(btnString).attr('href'));
+			}
+			return false;
+		}
+		return true;
+	};
+
+	this.SwallowEnter	= function(evt) 
+	{
+		if (GetKeycode(evt) == "13")
+			return false;
+
+		return true;
+	};
+
+	this.RefreshWithNewSrc	= function(src)
+	{
+		__doPostBack('__Page', src);
+		return;
+	};
+
+	this.PopUp	= function(url, w, h)
+	{
+		var scrW = 800, scrH = 600;
+		//if (document.all || document.layers)
+		{
+			scrW = screen.availWidth;
+			scrH = screen.availHeight;
+		}
+		var leftPos = (scrW - w) / 2, topPos = (scrH - h) / 2;
+		var day = new Date();
+		var id = day.getTime();
+		eval("page" + id + " = window.open(url, '" + id + "', 'toolbar=0,scrollbars=0,location=0,statusbar=0,menubar=0,resizable=0,width=" + w + ",height=" + h + ",left =" + leftPos + ",top=" + topPos + "');");
+	};
+
+	this.IsEmpty		= function(str)
+	{
+		return  (!$.trim(str).length);
+	};	
+
+	///.........Private...
+	var GetKeycode = function(e) 
+	{
+		if (!e)
+			e = window.event;
+		if (!e)
+			return 0;
+
+		if (e.keyCode)
+			return e.keyCode;
+		else if (e.charCode)
+			return e.charCode;
+		else if (e.which)
+			return e.which;
+		else
+			return 0;
+	};
+};
+//------------------End: DigiUtils-------------------------------------------------------------
+
+//------------------DigiLocalisation-----------------------------------------------------------
+var DigiLocalisation = new function() 
+{
+	var flagInterval = null;
+
+	this.SetupLocalisation	= function()
+	{
+		// Show flags when flag clicked
+		$('.language-options').click( function()
+		{
+			$('.language-options').fadeOut(300);
+			DigiLocalisation.ClearFlagInterval();
+		} );
+
+		// Keep flag overlay in position
+		$(window).resize(function() 
+		{ 
+			PositionFlags();
+			$(".language-select ul a.go").colorbox.resize({width:"80%", height:"90%"});
+		});
+
+		// Ignore flag press
+		$('.language-select button').click(function(event) 
+		{
+			event.preventDefault();
+			return false;
+		});
+
+		// Handle over in/out
+		$('.language-select button').hover(function() 
+			{
+				// Mouse in
+				PositionFlags();
+				$('.language-options').fadeIn(300);
+			}, 
+			function()
+			{ 
+				// Mouse out
+				if ( IsNull(flagInterval) )
+				{
+					flagInterval = setInterval(function ()
+					{
+						if ( $('.language-options').is(":visible") )
+						{
+							if (	!$('.language-options').is(":hover") && 
+									!$('.language-select').is(":hover") )
+							{
+								DigiLocalisation.ClearFlagInterval();
+							}
+						}
+					}, 2000);
+				}
+			}
+		);
+
+		// Setup colour box
+		if ( $(".language-select ul a.go") )
+			$(".language-select ul a.go").colorbox({iframe:true, width:"80%", height:"90%", reposition:false, fixed:true});
+	};
+
+	this.ClearFlagInterval = function()
+	{
+		clearInterval(flagInterval);
+		flagInterval = null;
+		$('.language-options').fadeOut(300);
+	};
+
+	var IsNull = function(obj)
+	{
+		return ( (null === obj) || (typeof(obj) == "undefined") );
+	};
+
+	var PositionFlags = function()
+	{
+		var pos = $('.language-select').offset();
+
+		$('.language-options')
+			.css({
+			'position': 'absolute',
+			'top': pos.top + 39 + 'px',
+			'left': pos.left - 104 + 'px'
+			});
+	};
+};
+//------------------END: DigiLocalisation-----------------------------------------------------------
+
+function MonitorTwitWidget()
+{
+	if ( $('.twitter-footer').length )
+	{
+		var twitFrame = $("#twitter-widget-0");
+
+		if ( 0 === twitFrame.length )
+		{
+			setTimeout(MonitorTwitWidget, 500);
+		}
+		else
+		{
+			var iframeWin = document.getElementById('twitter-widget-0').contentWindow;
+			$(iframeWin).one('resize', FixTwitWidget);
+		}
+	}
+}
+
+function FixTwitWidget()
+{
+	try
+	{
+		$("#twitter-widget-0").contents().find(".MediaCard-media").hide();
+		$("#twitter-widget-0").contents().find(".timeline-Tweet-media").hide();
+		$("#twitter-widget-0").contents().find("a").css("color","#DA4575");
+		$("#twitter-widget-0").contents().find(".timeline-Tweet-text").css("font-size","14px");
+		$("#twitter-widget-0").css("height","20px"); // Trigger refresh
+	}
+	catch (err)
+	{
+	}
+}
+
+// MAINTAIN SCROLL BAR POSITIONING
+var cloudXPos, cloudYPos;
+
+function BeginRequestHandler_TagSelector(sender, args) 
+{
+	if ( $('.cloud') )
+	{
+		cloudXPos = $('.cloud').scrollLeft();
+		cloudYPos = $('.cloud').scrollTop();
+	}	
+}
+
+function EndRequestHandler_TagSelector(sender, args) 
+{
+	if ( $('.cloud') )
+	{
+		 $('.cloud').scrollLeft(cloudXPos);
+		 $('.cloud').scrollTop(cloudYPos);
+	}
+}
+
+$.extend($.easing,
+{
+    easeOutBounce: function (x, t, b, c, d) {
+        if ((t/=d) < (1/2.75)) {
+            return c*(7.5625*t*t) + b;
+        } else if (t < (2/2.75)) {
+            return c*(7.5625*(t-=(1.5/2.75))*t + 0.75) + b;
+        } else if (t < (2.5/2.75)) {
+            return c*(7.5625*(t-=(2.25/2.75))*t + 0.9375) + b;
+        } else {
+            return c*(7.5625*(t-=(2.625/2.75))*t + 0.984375) + b;
+        }
+    }
+});
